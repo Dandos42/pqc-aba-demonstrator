@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PQC ABA Ecosystem Demonstrator</title>
+    <style>
+        :root { 
+            --primary-dark: #1a252f; /* Authority/Institutional headers */
+            --accent-blue: #2980b9; /* Interactive elements (Buttons, Active tabs) */
+            --success-green: #27ae60; /* Cryptographic Verification Passed */
+            --error-red: #c0392b;  /* Cryptographic Verification Failed / Local Abort */
+            --light-grey: #ecf0f1; /* Backgrounds for secondary elements */
+            --border-color: #dcdde1; /* Structural delineations */
+        }
+        /*GLOBAL STRUCTURE & TYPOGRAPHY*/
+        body { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            background: #f5f6fa; 
+            margin: 0; 
+            padding: 40px; 
+            color: #2f3640;
+        } 
+        /** The central wrapper simulating an application window.*/
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        /* Header & Navigation */
+        /*A user interface element. It visually distinguishes between three different roles (issuer, holder, verifier) and technical standards.*/
+        header {
+            background: var(--primary-dark);
+            padding: 25px 40px;
+            color: white;
+        }
+        header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; }
+        header p { margin: 5px 0 0; opacity: 0.7; font-size: 14px; }
+
+        .nav-tabs { 
+            display: flex; 
+            background: #f8f9fa; 
+            border-bottom: 1px solid var(--border-color);
+        }
+        /* Unselected state for organizational roles */
+        .tab-btn { 
+            padding: 18px 30px; 
+            border: none; 
+            background: none; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: 600; 
+            color: #7f8c8d;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+        /* The "Selected" status clearly indicates to the user that they are currently in the SSI role */
+        .tab-btn.active { 
+            color: var(--accent-blue); 
+            border-bottom: 3px solid var(--accent-blue);
+            background: white;
+        }
+        /*Tab Content Visibility Toggling*/
+        /*Implements the Single Page Application behavior without page reloads*/
+        .content { padding: 40px; min-height: 500px; }
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Forms, inputs, grids */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        /* Used to represent discrete entities, like an Identity Profile in the Wallet */
+        .card { 
+            border: 1px solid var(--border-color); 
+            padding: 25px; 
+            border-radius: 4px;
+        }
+        /*TYPOGRAPHY & FORM ELEMENTS*/
+        h2 { font-size: 18px; margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid var(--light-grey); padding-bottom: 10px; }
+        
+        label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; color: #7f8c8d; }
+        input, select { 
+            width: 100%; padding: 10px; margin-bottom: 20px; 
+            border: 1px solid var(--border-color); border-radius: 3px;
+            font-size: 14px;
+        }
+        /** INTERACTIVE ELEMENTS (Buttons)*/
+        .btn { 
+            padding: 12px; border: none; border-radius: 3px; cursor: pointer; 
+            font-weight: bold; text-transform: uppercase; font-size: 13px; transition: 0.2s;
+        }
+        .btn-primary { background: var(--accent-blue); color: white; width: 100%; }
+        .btn-primary:hover { background: #2471a3; }
+        
+        /* Specialized UI Components */
+        /*Simulated Secure Terminal for the Authority's AES-GCM Encrypted Audit Log.*/
+        .log-container { 
+            background: #2d3436; color: #dfe6e9; padding: 15px; 
+            font-family: 'Courier New', Courier, monospace; font-size: 12px;
+            height: 250px; overflow-y: auto; border-radius: 3px;
+        }
+        /*They visually distinguish between raw unverified text (PII) and mathematically verified cryptographic claims (PQC attributes).*/
+        .status-badge { 
+            display: inline-block; padding: 4px 10px; border-radius: 20px; 
+            font-size: 11px; font-weight: bold;
+        }
+        .badge-success { background: #dff9fb; color: var(--success-green); border: 1px solid var(--success-green); }
+        .badge-pqc { background: #f3e5f5; color: #8e24aa; border: 1px solid #8e24aa; margin-left: 5px; }
+
+        /** Represents the barrier before AES-256 local decryption occurs. 
+         * Data underneath cannot be rendered without the Master Password.*/
+        .auth-overlay {
+            text-align: center; padding: 60px 0;
+            background: #f9f9f9; border: 1px dashed var(--border-color);
+        }
+
+        pre { background: #f1f2f6; padding: 15px; font-size: 13px; border-radius: 3px; overflow-x: auto; }
+
+        /* Benchmark styles */
+        /*TELEMETRY & BENCHMARK DASHBOARD (The 6-6-6 Grid)*/
+        .metric-box {
+            background: #f8f9fa; padding: 20px; border-radius: 4px; border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 24px; font-weight: bold; color: var(--accent-blue); margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>PQC - Attribute Based Authentication</h1>
+        <p>Post-Quantum Attribute-Based Authentication Demonstrator</p>
+    </header>
+
+    <nav class="nav-tabs">
+        <button class="tab-btn active" onclick="showTab('issuer')">Issuer</button>
+        <button class="tab-btn" onclick="showTab('wallet')">Users Wallet</button>
+        <button class="tab-btn" onclick="showTab('verifier')">Verifier</button>
+        <button class="tab-btn" onclick="showTab('benchmarks')">Benchmarks</button>
+        <button class="tab-btn" onclick="showTab('user_manual')">User Manual</button>
+        <button class="tab-btn" onclick="showTab('about')">About</button> 
+    </nav>
+
+    <div class="content">
+        <div id="issuer" class="section active">
+            <div class="grid">
+                <div class="card">
+                    <h2>Credential Issuance</h2>
+                    <form id="issue-form">
+                        <label>Full Name</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="ins_first" placeholder="First Name" required>
+                            <input type="text" id="ins_last" placeholder="Last Name" required>
+                        </div>
+
+                        <label>Date of Birth</label>
+                        <input type="date" id="ins_dob" required>
+                        
+                        <label>Identity Details</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="ins_id_card" placeholder="ID Card Number" required>
+                            <input type="email" id="ins_email" placeholder="Email Address" required>
+                        </div>
+                        <input type="text" id="ins_birth_place" placeholder="Place of Birth" required>
+
+                        <label>Residential Address</label>
+                        <input type="text" id="ins_street" placeholder="Street and House Number" required>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="ins_zip" placeholder="ZIP Code" required style="flex: 1;">
+                            <input type="text" id="ins_city" placeholder="City" required style="flex: 3;">
+                        </div>
+                        
+                        <label>Attributes for ZKP Signing</label>
+                        <select id="ins_adult">
+                            <option value="1">Age over 18: TRUE</option>
+                            <option value="0">Age over 18: FALSE</option>
+                        </select>
+                        <select id="ins_license">
+                            <option value="1">Driving License: VALID</option>
+                            <option value="0">Driving License: NONE</option>
+                        </select>
+                        <select id="ins_record">
+                            <option value="1">Criminal Record: CLEAN</option>
+                            <option value="0">Criminal Record: HAS OFFENSES</option>
+                        </select>
+                        <label>Wallet Encryption Key (AES-256)</label>
+                        <input type="password" id="ins_password" placeholder="Define Master Password" required>
+
+                        
+                        <button type="submit" class="btn btn-primary">Sign & Issue Credentials</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>Audit Registry</h2>
+                    <p style="font-size: 12px; color: #7f8c8d;">Encrypted transaction logs (AES-GCM protected). No PII stored.</p>
+                    <div id="registry-list" class="log-container">Initializing audit trail...</div>
+                    <button onclick="updateRegistry()" class="btn" style="margin-top:10px; font-size:10px; background:#eee;">Refresh Logs</button>
+                    <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                        <h6 style="font-weight: bold; color: var(--primary-dark); margin: 0 0 5px 0; font-size: 13px; text-transform: uppercase;">Developer Tools</h6>
+                        <p style="font-size: 11px; color: #7f8c8d; margin-bottom: 10px;">
+                            Automatically populate the system with 5 test users to demonstrate all ZKP scenarios.
+                        </p>
+                        <button id="btn-seed-users" onclick="seedTestUsers()" class="btn" style="width: 100%; border: 1px solid var(--accent-blue); color: var(--accent-blue); background: white;">
+                            Generate Test Database
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="wallet" class="section">
+            <div id="wallet-auth" class="auth-overlay">
+                <h2>Secure Storage Locked</h2>
+                <p>Authentication required to derive AES-256 decryption key.</p>
+                <input type="password" id="wallet-pass-input" style="max-width:300px; text-align:center;" placeholder="Enter Master Password">
+                <br>
+                <button onclick="unlockWallet()" class="btn btn-primary" style="max-width:320px;">Unlock Wallet</button>
+            </div>
+
+            <div id="wallet-content" style="display:none;">
+                <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Credential Store</h2>
+                    <button onclick="lockWallet()" class="btn" style="font-size:10px; background:#eee;">Lock Session</button>
+                </div>
+                <div id="my-credentials-grid"></div>
+            </div>
+        </div>
+
+        <div id="verifier" class="section">
+            <div class="card">
+                <h2>Proof Verification</h2>
+                <label>Verification Scenario</label>
+                <select id="ver-scenario">
+                    <option value="alcohol">Age verification (Threshold > 18)</option>
+                    <option value="police">Police check (Driving License)</option>
+                    <option value="hr">Criminal record (Clean Criminal Record)</option>
+                </select>
+                <p style="font-size: 13px; color: #7f8c8d;">The verifier initiates a Zero-Knowledge Proof request. No personal data is exchanged.</p>
+            </div>
+
+           <div id="ver-result" style="display:none; margin-top:20px;">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <h3 style="margin:0;">Verification Result:</h3>
+                <span id="ver-badge" class="status-badge" style="font-size:16px;"></span>
+            </div>
+            <p id="ver-text" style="margin-top:15px;"></p>
+            <pre id="ver-json" style="display: none;"></pre>           
+        </div>
+        </div>
+
+        <div id="benchmarks" class="section">
+            <h2>Cryptographic Performance Benchmarks</h2>
+            <p style="font-size: 13px; color: #7f8c8d;">Real-time metrics fetched from the latest C kernel executions.</p>
+            
+           <div class="grid-3" style="margin-top: 20px;">
+                <div class="card">
+                    <h3 style="margin-top: 0; color: #2c3e50;">Issuer Phase</h3>
+                    <div class="metric-box" style="margin-bottom: 10px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">1. User Keygen</div>
+                        <div id="bench-keygen-time" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 10px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">2. Crypto Commitment</div>
+                        <div id="bench-commit-time" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 15px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">3. Blind Signature</div>
+                        <div id="bench-sign-time" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 15px; background: #eef2f5;">
+                        <div style="font-size: 11px; font-weight: bold; color: #2c3e50; text-transform: uppercase;">Phase Sign (Issuance)</div>
+                        <div id="bench-issue-time" class="metric-value" style="font-size: 22px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 10px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Single Credential Size</div>
+                        <div id="bench-wallet-size-single" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Total Wallet Size (3x)</div>
+                        <div id="bench-wallet-size-total" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-top: 0; color: #2c3e50;">Prover Phase (ZKP)</h3>
+                    <div class="metric-box" style="margin-bottom: 10px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">1. Wallet & Keys Load (I/O)</div>
+                        <div id="bench-prove-io-time" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 10px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">2. Data Embedding</div>
+                        <div id="bench-embed-time" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 15px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">3. Fiat-Shamir Execute</div>
+                        <div id="bench-prove-fs-time" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 15px; background: #eef2f5;">
+                        <div style="font-size: 11px; font-weight: bold; color: #2c3e50; text-transform: uppercase;">Phase Gen (Prover)</div>
+                        <div id="bench-prove-total" class="metric-value" style="font-size: 22px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 10px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Total Proof Payload Size</div>
+                        <div id="bench-proof-size-total" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Pure ZKP Data Size</div>
+                        <div id="bench-proof-size-pure" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-top: 0; color: #2c3e50;">Verifier Phase (Check)</h3>
+                    <div class="metric-box" style="margin-bottom: 10px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">1. RAM Setup (Allocation)</div>
+                        <div id="bench-verify-ram-time" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 10px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">2. PK & Proof Load (I/O)</div>
+                        <div id="bench-recon-time" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 15px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">3. Mathematical Verify</div>
+                        <div id="bench-verify-math-time" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 15px; background: #eef2f5;">
+                        <div style="font-size: 11px; font-weight: bold; color: #2c3e50; text-transform: uppercase;">Phase Verify (Verifier)</div>
+                        <div id="bench-verify-total" class="metric-value" style="font-size: 22px;">N/A</div>
+                    </div>
+                    <div class="metric-box" style="margin-bottom: 10px;">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Authority Public Key Size</div>
+                        <div id="bench-public-key-size" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                    <div class="metric-box">
+                        <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Peak RAM Usage</div>
+                        <div id="bench-verify-ram-usage" class="metric-value" style="font-size: 18px;">N/A</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="about" class="section">
+            <div class="card">
+                <h1>About Project</h1>
+                <p>
+                    This application serves as a demonstrator of an attribute-based authentication and self-sovereign identity (SSI) ecosystem that utilizes post-quantum cryptography and zero-knowledge proofs. It is based on the <em>Signature with Efficient Protocols (SEP)</em> scheme proposed in the paper <em>"Practical Post-Quantum Signatures for Privacy"</em> (Argo et al., CCS '24).
+                </p>
+                
+                <h4>Resources and References</h4>
+                <ul>
+                    <li>Original Research Paper: <a href="https://eprint.iacr.org/2024/131.pdf" target="_blank">Practical Post-Quantum Signatures for Privacy</a></li>
+                    <li>Authors of the Research Paper:</strong> Sven Argo, Tim Güneysu, Corentin Jeudy, Georg Land, Adeline Roux-Langlois, Olivier Sanders</li>
+                    <li>Original Repository: <a href="https://github.com/Chair-for-Security-Engineering/lattice-anonymous-credentials" target="_blank">GitHub Repository</a></li>
+                </ul>
+
+                <h4>Build and start Demonstrator</h4>
+                <ul>
+                    <li>In windows comandline, navigate to the program folder where the Dockerfile is located</li>
+                    <li>Type the following command: <strong>docker build -t lac_api .</strong> to build the application and create a container</li>
+                    <li>After a successful build, start the container using the following command: <strong>docker run -d -p 8000:8000 --name lac_demo lac_api</strong></li>
+                    <li>Open the index.html file in your browser. That's all there is to it—you're now ready to use the demo.</li>
+                </ul>
+
+                <h3><strong>System Architecture and Contributions</strong></h3>
+                
+                <p><strong>Original Authors' Code: </strong> Low-level implementation of lattice cryptography, ZKP schemes, cryptographic primitives and the mathematical aspects of lattice cryptography and basic benchmarking</p>
+                <p><strong>My Contribution (Implementation):</strong></p>
+                
+                <ul>
+                    <li><strong>C-Kernel Architectural Separation:</strong> Decoupled the original monolithic academic code into three independent, isolated C binaries, each responsible for a distinct cryptographic phase with secure memory serialization to disk:
+                        <ul>
+                            <li><code>issue_credential.c</code> (Signer): Executes the lattice key generation for the user, processes the cryptographic commitment, and mathematically computes the blind signature over the specific attributes. Outputs the raw binary credential.</li>
+                            <li><code>generate_proof.c</code> (Prover): Loads the stored credential into RAM, embeds the data, and applies the Fiat-Shamir transformation to construct a mathematically sound Zero-Knowledge Proof (ZKP). Serializes this anonymous proof into an ephemeral binary file.</li>
+                            <li><code>verify_proof.c</code> (Verifier): Deserializes the ZKP binary and the Authority's master public key. Performs the heavy matrix multiplications required to mathematically validate the proof's integrity without revealing the underlying attributes.</li>
+                        </ul>
+                    </li>
+                    <p></p>
+                    <li><strong>Python Backend Orchestrator:</strong> Designed a complete API layer built on the FastAPI framework that acts as a secure bridge to the C-kernel. It consists of:
+                        <ul>
+                            <li><code>authority.py</code> (Issuer): Simulates the Trusted Issuer, handles personal information parsing, triggers C-kernel signatures, and securely logs AES-GCM encrypted audits (Data Minimization - no PII stored).</li>
+                            <li><code>wallet.py</code> (Holder): Manages local secure storage. Encrypts and decrypts user attributes and ZKP binaries using AES-256-GCM.</li>
+                            <li><code>prover.py</code> (Prover): Acts as the active cryptographic agent for the Wallet. It safely invokes the C-kernel to generate the ZKP and enforces local attribute validation (aborting the process locally if the user lacks the required attribute)</li>
+                            <li><code>verifier.py</code> (Verifier): Orchestrates the mathematical validation of the ephemeral ZKP binary and ensures its immediate deletion to prevent replay attacks.</li>
+                            <li><code>gen_test_users.py</code> An automated script that immediately populates the test environment with five predefined users, fills in their personal information, generates individual attribute-based credentials for each user, and stores them in the wallet. Access the wallet using the password: test</li>
+                        </ul>
+                    </li>
+                    <p></p>
+                    <li><strong>Frontend User Interface (index.html):</strong> A lightweight, dependency-free single page application built with Vanilla JavaScript, HTML5, and CSS3. It acts as the visual and orchestration layer for the entire demonstrator, providing:
+                        <ul>
+                            <li>Tabbed navigation seamlessly simulating the workflow between the <em>Issuer</em> (data entry, credential generation, encrypted audit logs), the <em>Wallet</em> (secure local storage, identity management), and the <em>Verifier</em> (scenario-based zero-knowledge proofs</li>
+                            <li>Utilizes asynchronous JavaScript (Fetch API) for seamless communication with the Python backend without page reloads.</li>
+                            <li>Provides Real-Time Telemetry Dashboard</li>
+                        </ul>
+                    </li>        
+                </ul>
+                
+                <h3><strong>Benchmarks</strong></h3>
+                <p>Tab displays real-time telemetry extracted directly from the isolated C-kernel executions using <code>CLOCK_MONOTONIC</code>.</p>
+                <h4>Issuer</h4>
+                <ul>
+                    <li>User Keygen: Time to generate the user's secret/public key pair.</li>
+                    <li>Crypto Commitment: Time to securely commit the user's attributes into a lattice matrix.</li>
+                    <li>Blind Signature: Time taken by the authority to mathematically sign the committed attributes without seeing the actual data.</li>
+                    <li>Phase Sign (Issuance): Total duration of the issuance protocol (sum of the above steps)</li>
+                    <li>Single Credential Size: Disk space consumed by one binary lattice credential.</li>
+                    <li>Total Wallet Size: Combined size of all 3 issued credentials (Age, License, Record).</li>
+                </ul>
+
+                <h4>Prover</h4>
+                <ul>
+                    <li>Wallet & Keys Load (I/O): Time required to load lattice keys from the disk into RAM.</li>
+                    <li>Data Embedding: Time to embed the blind signature into the ZKP polynomial ring.</li>
+                    <li>Fiat-Shamir Execute: Time to execute the interactive-to-non-interactive transformation (the core proof generation).</li>
+                    <li>Phase Gen (Prover): Total execution time required to generate the anonymous proof.</li>
+                    <li>Total Proof Payload Size: Total size of the generated binary payload (Proof + CRS + UPK seed).</li>
+                    <li>Pure ZKP Data Size: Size of the mathematically blinded zero-knowledge vectors alone</li>
+                </ul>
+
+                <h4>Verifer</h4>
+                <ul>
+                    <li>RAM Setup (Allocation): Time to allocate memory for FLINT matrix structures.</li>
+                    <li>PK & Proof Load (I/O): Time to deserialize the proof and the Authority's Master Public Key.</li>
+                    <li>Mathematical Verify: Time spent computing polynomial multiplications to check validity.</li>
+                    <li>Phase Verify (Verifier): Total execution time of the Verifier entity.</li>
+                    <li>Authority Public Key Size: File size of the Authority's Master Public Key.</li>
+                    <li>Peak RAM Usage: Maximum Resident Set Size (memory footprint) during the verification process.</li>
+                </ul>
+
+
+            </div>
+        </div>
+
+        <div id="user_manual" class="section">
+            <div class="card">
+                <h1>User Manual</h1>
+                <p>The application is designed as a single-page application and is divided into five logical sections</p>
+                
+                <h4>Tab Isuuer</h4>
+                <ul>
+                    <li>Form: Used to enter the user’s personal information (first name, last name, ID card number, date of birth, address) and define their attributes for cryptographic signing (age of majority, driver’s license, criminal record).</li>
+                    <li>Wallet Encryption Key: Here, the user defines the master password that will be used to locally encrypt their wallet using the AES-256 algorithm.</li>
+                    <li>Audit Registry: Displays an encrypted transaction log.  It contains only a timestamp, an anonymous ID, and a list of signed attributes, but does not contain any personal data</li>
+                    <li>The "Generate Test Database" button allows you to instantly populate the system with five predefined test profiles for a quick demonstration of various scenarios. The password to enter in the wallet is: <strong>test</strong></li>
+                </ul>
+
+                <h4>Tab Users Wallet</h4>
+                <ul>
+                    <li>Secure Storage Locked: The wallet is locked upon opening. A password defined at issuance is required to access the data (for test users, the password is "test")</li>
+                    <li>Credential Store: After unlocking, identity cards are displayed. Each card clearly lists personal data and the status of cryptographic attributes.</li>
+                    <li>The “Select Identity for ZKP Verification” button initiates the verification protocol (Prover) for the selected identity.</li>
+                    <li>Lock Session: Allows the user to immediately delete decrypted data from the browser’s operating memory and lock the wallet again</li>
+                </ul>
+
+
+                <h4>Tab Verifier</h4>
+                <ul>
+                    <li>Drop-down menu for selecting the type of check: Age Verification (Age Verification > 18); Police Check (Driver's License Validity Check); HR Screening (Criminal Background Check).</li>
+                    <li>Verification Result: Once the protocol has run, the verdict “AUTHORIZED” (in green) or “UNAUTHORIZED” (in red) will be displayed, along with the subject’s anonymous ID and confirmation of the mathematical validity of the proof</li>
+                </ul>
+
+                <h4>Tab Benchmarks</h4>
+                <ul>
+                    <li>Panel showing performance metrics by time and size. A detailed breakdown of metrics organized into the Issuer, Prover, and Verifier phases. This panel tracks computation times, I/O operations (disk reads), RAM allocation, binary proof sizes, and peak memory usage in MB.</li>
+                    <li>A more detailed description of the individual metrics is available on the <strong>"About" tab</strong></li> 
+                </ul>
+
+                <h4>Tab About</h4>
+                <ul>
+                    <li>It includes technical documentation for the project, a description of the system architecture, a list of technologies used (C, Python, JavaScript), and an explanation of the measurement methodology in relation to the reference paper.</li>
+                </ul>
+           </div> 
+        </div>
+    </div>
+</div>
+
+<script>
+const API_BASE = "http://localhost:8000"; // Pointer to the Python API Gatew
+    // In-memory volatile storage for the decrypted wallet.
+    // This state is destroyed if the user refreshes the page, ensuring security.
+    let decryptedWalletData = null;
+    let currentPassword = "";
+
+    // TELEMETRY STORE (The 6-6-6 Grid Data Model)
+    // Stores the latest cryptographic execution metrics fetched from the Python backend.
+    let latestBenchmarks = {
+        
+        //ISSUER METRICS
+        keygenTime: null,
+        commitTime: null,
+        signTime: null,
+        issueTime: null,
+        walletSize: null,
+        
+        //PROVER (ZKP) METRICS
+        ioTime: null, // // Time required to load massive lattice keys from disk to RAM
+        embedTime: null, // Time to embed the blind signature into the ZKP polynomial ring
+        proveFsTime: null, // Time to execute the Fiat-Shamir transformation (with aborts)
+        proveTime: null, // Total execution time of the Prover
+        proofSize: null, // Total size of the generated binary payload (Proof + CRS + UPK seed)
+        pureProofSize: null, // Size of the mathematically blinded zero-knowledge vectors alone
+        
+        //VERIFIER METRICS
+        ramTime: null, //Time to allocate memory for FLINT matrix structures
+        reconTime: null, // Time to deserialize the proof and reconstruct the public statement
+        verifyMathTime: null, // Time spent computing polynomial multiplications to check validity
+        verifyTime: null, // Total execution time of the Verifier
+        pkSize: null, // Size of the Authority's Master Public Key (for ratio comparison)
+        peakRamKb: null // Maximum Resident Set Size (RAM footprint) during verification
+    };
+    // Implements Single Page Application (SPA) behavior without relying on external frameworks.
+    function showTab(id) {
+        // Hide all content sections and deactivate all navigation buttons
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        
+        // Activate the selected section and its corresponding button
+        document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
+        
+        // Refresh the encrypted audit log whenever the Issuer tab is visited
+        if(id === 'issuer') updateRegistry();
+    }
+    //Maps the in-memory 'latestBenchmarks' object to the HTML DOM.
+    // Handles unit conversions (Bytes to KB/MB) and fallback states ('N/A')
+    function updateBenchmarkUI() {
+        // Issuer Phase Metrics
+        document.getElementById('bench-keygen-time').innerText = latestBenchmarks.keygenTime ? `${latestBenchmarks.keygenTime.toFixed(2)} ms` : 'N/A';
+        document.getElementById('bench-commit-time').innerText = latestBenchmarks.commitTime ? `${latestBenchmarks.commitTime.toFixed(2)} ms` : 'N/A';
+        document.getElementById('bench-sign-time').innerText = latestBenchmarks.signTime ? `${latestBenchmarks.signTime.toFixed(2)} ms` : 'N/A';
+        document.getElementById('bench-issue-time').innerText = latestBenchmarks.issueTime ? `${latestBenchmarks.issueTime.toFixed(2)} ms` : 'N/A';
+        
+        //Convert raw bytes to Kilobytes (KB) for readability
+        if(latestBenchmarks.walletSize) {
+            const singleKb = (latestBenchmarks.walletSize / 1024).toFixed(2);
+            // The demonstrator issues 3 distinct credentials simultaneously
+            const totalKb = (latestBenchmarks.walletSize * 3 / 1024).toFixed(2);
+            document.getElementById('bench-wallet-size-single').innerText = `${singleKb} KB`;
+            document.getElementById('bench-wallet-size-total').innerText = `${totalKb} KB`;
+        } else {
+            document.getElementById('bench-wallet-size-single').innerText = 'N/A';
+            document.getElementById('bench-wallet-size-total').innerText = 'N/A';
+        }
+
+        //Prover (ZKP) Phase Metrics
+        document.getElementById('bench-prove-io-time').innerText = latestBenchmarks.ioTime ? `${latestBenchmarks.ioTime.toFixed(2)} ms` : 'N/A';
+        document.getElementById('bench-embed-time').innerText = latestBenchmarks.embedTime ? `${latestBenchmarks.embedTime.toFixed(2)} ms` : 'N/A';
+        document.getElementById('bench-prove-fs-time').innerText = latestBenchmarks.proveFsTime ? `${latestBenchmarks.proveFsTime.toFixed(2)} ms` : 'N/A';
+        document.getElementById('bench-prove-total').innerText = latestBenchmarks.proveTime ? `${latestBenchmarks.proveTime.toFixed(2)} ms` : 'N/A';
+        
+        if(latestBenchmarks.proofSize && latestBenchmarks.pureProofSize) {
+            const totalKb = (latestBenchmarks.proofSize / 1024).toFixed(2);
+            const pureKb = (latestBenchmarks.pureProofSize / 1024).toFixed(2);
+            document.getElementById('bench-proof-size-total').innerText = `${totalKb} KB`;
+            document.getElementById('bench-proof-size-pure').innerText = `${pureKb} KB`;
+        } else {
+            document.getElementById('bench-proof-size-total').innerText = 'N/A';
+            document.getElementById('bench-proof-size-pure').innerText = 'N/A';
+        }
+        
+        //Verifier Phase Metrics
+        document.getElementById('bench-verify-ram-time').innerText = latestBenchmarks.ramTime ? `${latestBenchmarks.ramTime.toFixed(2)} ms` : 'N/A';
+        document.getElementById('bench-recon-time').innerText = latestBenchmarks.reconTime ? `${latestBenchmarks.reconTime.toFixed(2)} ms` : 'N/A';
+        document.getElementById('bench-verify-math-time').innerText = latestBenchmarks.verifyMathTime ? `${latestBenchmarks.verifyMathTime.toFixed(2)} ms` : 'N/A';
+        document.getElementById('bench-verify-total').innerText = latestBenchmarks.verifyTime ? `${latestBenchmarks.verifyTime.toFixed(2)} ms` : 'N/A';
+        document.getElementById('bench-public-key-size').innerText = latestBenchmarks.pkSize ? `${(latestBenchmarks.pkSize / 1024).toFixed(2)} KB` : 'N/A';
+        document.getElementById('bench-verify-ram-usage').innerText = latestBenchmarks.peakRamKb ? `${(latestBenchmarks.peakRamKb / 1024).toFixed(2)} MB` : 'N/A';
+    
+    }
+    //Intercepts the form submission to prevent page reloads
+    //handles the multi-step process of requesting a credential and securely storing it.
+    document.getElementById('issue-form').onsubmit = async (e) => {
+        e.preventDefault(); // Prevent standard HTML form submission
+        //Gather Personal Identifiable Information (PII) and target ZKP attributes
+        const data = {
+            first_name: document.getElementById('ins_first').value,
+            last_name: document.getElementById('ins_last').value,
+            date_of_birth: document.getElementById('ins_dob').value,
+            id_card_number: document.getElementById('ins_id_card').value,
+            email: document.getElementById('ins_email').value,
+            birth_place: document.getElementById('ins_birth_place').value,
+            street: document.getElementById('ins_street').value,
+            zip_code: document.getElementById('ins_zip').value,
+            city: document.getElementById('ins_city').value,
+            //Cryptographic attributes mapped to 0 (False) or 1 (True
+            is_adult: parseInt(document.getElementById('ins_adult').value),
+            has_license: parseInt(document.getElementById('ins_license').value),
+            clean_record: parseInt(document.getElementById('ins_record').value)
+        };
+        const pass = document.getElementById('ins_password').value;
+
+        try {
+            //Request credential generation from the Trusted Authority
+            //The Python backend will invoke the C-kernel to generate lattice signatures.
+            const res = await fetch(`${API_BASE}/authority/issue`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            const issueResult = await res.json();
+
+            if (!res.ok) {
+                throw new Error(issueResult.detail || "Server error");
+            }
+
+            //Update telemetry dashboard if the Authority provided hardware benchmarks
+            if (issueResult.benchmarks) {
+                latestBenchmarks.keygenTime = issueResult.benchmarks.time_keygen_ms;
+                latestBenchmarks.commitTime = issueResult.benchmarks.time_commit_ms;
+                latestBenchmarks.signTime = issueResult.benchmarks.time_sign_ms;
+                latestBenchmarks.issueTime = issueResult.benchmarks.time_issue_single_ms;
+                latestBenchmarks.walletSize = issueResult.benchmarks.wallet_size_bytes;
+                updateBenchmarkUI(); 
+            }
+            //Securely transfer the issued credentials to the User's Wallet
+            //The PII and the binary lattice files are sent to the local wallet endpoint
+            //for AES-256-GCM encryption using the user's Master Password
+            await fetch(`${API_BASE}/wallet/receive`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: issueResult.user_id,
+                    personal_data: issueResult.personal_data,
+                    wallet_files: issueResult.wallet_files,
+                    wallet_password: pass
+                })
+            });
+
+            alert("Success: Credentials for " + data.first_name + " issued.");
+            document.getElementById('issue-form').reset();
+        } catch (err) { alert("Error during issuance."); }
+    };
+
+    // AUDIT LOG VIEWER
+    // Fetches the decrypted Authority Registry to demonstrate Data Minimization.
+    // Notice that PII is completely absent from the log.
+    async function updateRegistry() {
+        try {
+            const res = await fetch(`${API_BASE}/authority/audit-logs`);
+            const logs = await res.json();
+            const div = document.getElementById('registry-list');
+            // Format timestamps and render immutable log entries
+            div.innerHTML = logs.map(l => 
+                `[${l.issued_at.split('T')[1].split('.')[0]}] UID: ${l.credential_id} | SCOPE: ${l.attributes_signed.join(', ')}`
+            ).join('<br>');
+        } catch(e) { console.log("Registry offline"); }
+    }
+
+    // WALLET AUTHENTICATION STATE
+    // Simulates opening a secure vault. 
+    //The Python backend performs AES-GCM decryption and verifies integrity before returning the PII to the frontend.
+    async function unlockWallet() {
+        const pass = document.getElementById('wallet-pass-input').value;
+        try {
+            
+            const res = await fetch(`${API_BASE}/wallet/unlock`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ wallet_password: pass })
+            });
+            const result = await res.json();
+            
+            if(res.ok) {
+                // Store decrypted data in volatile memory only
+                decryptedWalletData = result.data;
+                currentPassword = pass;
+                renderWallet(); // Build the UI cards
+                
+                //Toggle UI state from Locked to Unlocked
+                document.getElementById('wallet-auth').style.display = 'none';
+                document.getElementById('wallet-content').style.display = 'block';
+            } else { alert("Authentication Failed: Invalid Master Password."); }
+        } catch (err) { alert("Decryption Error: AES-GCM tag mismatch or incorrect key."); }
+    }
+
+    //Immediately flushes the decrypted PII from JavaScript memory and resets the UI.
+    function lockWallet() {
+        decryptedWalletData = null;
+        currentPassword = "";
+        document.getElementById('wallet-auth').style.display = 'block';
+        document.getElementById('wallet-content').style.display = 'none';
+        document.getElementById('wallet-pass-input').value = "";
+    }
+
+    // WALLET RENDERER (Holders View)
+    // Dynamically generates the UI for decrypted identities.
+    function renderWallet() {
+        const grid = document.getElementById('my-credentials-grid');
+        grid.innerHTML = "";
+        
+        // Iterate through all identities stored in the decrypted AES-GCM database
+        for (const [id, user] of Object.entries(decryptedWalletData)) {
+            const p = user.personal_data;
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.borderLeft = "5px solid var(--accent-blue)";
+            //// Build the Identity Card UI.
+            // Notice how the 'Select Identity for ZKP Verification' button passes ONLY 
+            // the anonymous 'id', completely decoupling the PII from the verification flow.
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+                    <div>
+                        <h3 style="margin:0; font-size:20px;">${p.first_name} ${p.last_name}</h3>
+                        <code style="font-size:11px; color:#7f8c8d;">UID: ${id}</code>
+                    </div>
+                    <div class="status-badge badge-success">Active Identity</div>
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:13px; margin-bottom:15px;">
+                    <div><strong>ID Card:</strong> ${p.id_card_number}</div>
+                    <div><strong>DOB:</strong> ${p.date_of_birth}</div>
+                    <div><strong>Email:</strong> ${p.email}</div>
+                    <div><strong>Birthplace:</strong> ${p.birth_place}</div>
+                    <div><strong>Address:</strong> ${p.street}, ${p.zip_code} ${p.city}</div>
+                </div>
+
+                <div style="margin-bottom:15px;">
+                    <span class="status-badge badge-pqc">AGE: ${p.is_adult ? '18+' : 'UNDERAGE'}</span>
+                    <span class="status-badge badge-pqc">LICENSE: ${p.has_license ? 'YES' : 'NO'}</span>
+                    <span class="status-badge badge-pqc">RECORD: ${p.clean_record ? 'CLEAN' : 'OFFENSES'}</span>
+                </div>
+                
+                <button onclick="requestVerification('${id}')" class="btn btn-primary" style="width:auto; padding:8px 20px;">
+                    Select Identity for ZKP Verification
+                </button>
+            `;
+            grid.appendChild(card);
+        }
+    }
+
+    // ZERO-KNOWLEDGE PROOF ORCHESTRATOR
+    // This is the core logic demonstrating the verification triangle.
+   async function requestVerification(userId) {
+        const user = decryptedWalletData[userId];
+        const scenario = document.getElementById('ver-scenario').value;
+        let filePath = "";
+        
+        // Select the appropriate binary credential file based on the context
+        if(scenario === 'alcohol') filePath = user.wallet_files.is_adult;
+        if(scenario === 'police') filePath = user.wallet_files.has_license;
+        if(scenario === 'hr') filePath = user.wallet_files.clean_record;
+
+        // Prepare the UI
+        showTab('verifier');
+        document.getElementById('ver-result').style.display = 'none';
+
+        try {
+            //LOCAL PROVER EXECUTION
+            //Send the context to the local C-kernel to generate an anonymous proof.
+            const proofRes = await fetch(`${API_BASE}/prover/generate-proof`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: userId,
+                    scenario: scenario,
+                    wallet_file_path: filePath
+                })
+            });
+            const proofData = await proofRes.json();
+            
+            if (proofData.status === "error") {
+                throw new Error("Prover Error: " + proofData.message);
+            }
+
+            //EDGE CASE HANDLING: Local Rejection
+            // If the user does not possess the attribute (e.g., underage trying to buy alcohol) the Prover aborts locally
+            if (proofData.status === "unauthorized") {
+                const badge = document.getElementById('ver-badge');
+                badge.innerText = "UNAUTHORIZED";
+                badge.style.background = "#fdedec";
+                badge.style.color = "var(--error-red)";
+                badge.style.border = `1px solid var(--error-red)`;
+                
+                // Render clean HTML rejection context
+                document.getElementById('ver-text').innerHTML = `
+                    <div style="margin-top: 15px; font-size: 15px; line-height: 1.6;">
+                        <strong>Verification Context:</strong> ${proofData.scenario_msg} <br>
+                        <strong>Anonymous Subject ID:</strong> <code>${userId}</code> <br>
+                        <strong>Cryptographic Verdict:</strong> <span style="color: var(--error-red); font-weight: bold;">Signature validation failed locally (User lacks the required attribute).</span>
+                    </div>
+                `;
+                
+                const jsonBox = document.getElementById('ver-json');
+                if (jsonBox) jsonBox.style.display = 'none';
+                
+                document.getElementById('ver-result').style.display = 'block';
+                return; //Abort protocol execution, ZKP is not create
+            }
+
+            //REMOTE VERIFICATION
+            // The local proof was generated successfully. 
+            // Send ONLY the anonymous binary path and the context to the Verifier for mathematical validation.
+            const verifyRes = await fetch(`${API_BASE}/verifier/verify`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: userId,
+                    scenario_msg: proofData.scenario_msg,
+                    proof_file_path: proofData.proof_file_path
+                })
+            });
+            const finalData = await verifyRes.json();
+
+            if (finalData.status === "error") {
+                throw new Error("Verifier Error: " + finalData.message);
+            }
+
+            //UI & TELEMETRY UPDATE
+            // Verifier decision and route hardware metrics to the dashboard.
+            const badge = document.getElementById('ver-badge');
+            badge.innerText = finalData.access_granted ? "AUTHORIZED" : "UNAUTHORIZED";
+            badge.style.background = finalData.access_granted ? "#eafaf1" : "#fdedec";
+            badge.style.color = finalData.access_granted ? "var(--success-green)" : "var(--error-red)";
+            badge.style.border = `1px solid ${finalData.access_granted ? "var(--success-green)" : "var(--error-red)"}`;
+            
+            // Clean HTML success rendering
+            document.getElementById('ver-text').innerHTML = `
+                <div style="margin-top: 15px; font-size: 15px; line-height: 1.6;">
+                    <strong>Verification Context:</strong> ${finalData.scenario} <br>
+                    <strong>Anonymous Subject ID:</strong> <code>${finalData.user_id}</code> <br>
+                    <strong>Cryptographic Verdict:</strong> <span style="color: ${finalData.access_granted ? 'var(--success-green)' : 'var(--error-red)'}; font-weight: bold;">${finalData.pqc_details.message || 'The ZKP has been mathematically verified!'}</span>
+                </div>
+            `;
+            
+            // Merge benchmarks from both isolated execution kernels
+            const combinedDetails = {
+                ...proofData.pqc_details,
+                ...finalData.pqc_details
+            };
+            
+            const jsonBox = document.getElementById('ver-json');
+            if (jsonBox) jsonBox.style.display = 'none';
+
+            document.getElementById('ver-result').style.display = 'block';
+
+            // Route metrics to the Dashboard Grid
+            if (combinedDetails) {
+                latestBenchmarks.ioTime = combinedDetails.time_io_ms;
+                latestBenchmarks.proveTime = combinedDetails.time_prove_ms;
+                latestBenchmarks.embedTime = combinedDetails.time_embed_ms;
+                latestBenchmarks.proveFsTime = combinedDetails.time_prove_fs_ms;
+                
+                latestBenchmarks.proofSize = combinedDetails.proof_size_bytes; 
+                latestBenchmarks.pureProofSize = combinedDetails.pure_proof_size_bytes; 
+                
+                latestBenchmarks.ramTime = combinedDetails.time_ram_ms;
+                latestBenchmarks.verifyTime = combinedDetails.time_verify_total_ms;
+                latestBenchmarks.reconTime = combinedDetails.time_recon_ms;
+                latestBenchmarks.verifyMathTime = combinedDetails.time_verify_math_ms;
+                latestBenchmarks.pkSize = combinedDetails.pk_size_bytes;
+                latestBenchmarks.peakRamKb = combinedDetails.peak_ram_kb;
+                
+                updateBenchmarkUI();
+            }
+
+        } catch (err) { 
+            alert("Verification Protocol Error:\n" + err.message); 
+        }
+    }
+    //Allows to instantly populate the ecosystem with predefined user with differnt credentials
+    async function seedTestUsers() {
+        const btn = document.getElementById("btn-seed-users");
+        const originalText = btn.innerHTML;
+        
+        // Provide immediate visual feedback to prevent multiple clicks during heavy C-kernel operations
+        btn.innerHTML = "Generating (please wait ~20 seconds)...";
+        btn.disabled = true;
+        btn.style.opacity = "0.7";
+
+        try {
+            const response = await fetch(`${API_BASE}/setup-test-users`, {
+                method: "POST"
+            });
+            const data = await response.json();
+            
+            if (data.status === "success") {
+                alert("Success! 5 test users have been created.\n\nGo to the Users Wallet tab and use Master Password: test");
+                updateRegistry(); // Refresh the visual audit log to show the new issuances
+            } else {
+                alert("Error occurred: " + data.message);
+            }
+        } catch (error) {
+            alert("Connection Error: Failed to connect to the server. Is the API running?");
+        } finally {
+            // Restore button state
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            btn.style.opacity = "1";
+        }
+    }
+</script>
+</body>
+</html>
