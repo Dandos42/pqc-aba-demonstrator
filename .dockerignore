@@ -1,0 +1,26 @@
+#Git documentation
+.git
+.gitmodules
+.gitignore
+README.md
+LICENSE
+
+#Python files
+__pycache__
+.venv
+venv
+*.pyc
+
+#IDE
+.idea
+.vscode
+
+#Local builds C 
+build
+_build
+cmake-build-*
+**/*.o
+
+
+scripts/
+frontend/

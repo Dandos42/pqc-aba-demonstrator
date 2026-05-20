@@ -1,0 +1,39 @@
+# IDE files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Python files
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.env
+
+# C / CMake and local builds
+build/
+_build/
+cmake-build-*/
+out/
+bin/
+
+
+*.o
+*.out
+code/test
+code/bench
+code/tools/create_credentials
+code/tools/generate_proof
+code/tools/verify_proof
+
+
+# Cryptography and logs
+*.bin
+*.enc
+wallets/
+zkp_proof_*.bin
+public_key.bin
+authority_registry.enc
