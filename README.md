@@ -1,4 +1,4 @@
-# PQC & ZKP Attribute-Based Authentication Demonstrator
+# PQC Attribute-Based Authentication Demonstrator
 
 ![C](https://img.shields.io/badge/c-%2300599C.svg?style=for-the-badge&logo=c&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
@@ -6,14 +6,22 @@
 ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
 
 ## About the Project
-This application serves as a demonstrator of an attribute-based authentication and self-sovereign identity (SSI) ecosystem. It utilizes **Post-Quantum Cryptography (PQC)** and **Zero-Knowledge Proofs (ZKP)** to achieve privacy-preserving identity verification.
-
+This application serves as a demonstrator of an attribute-based authentication (ABA) ecosystem utilizing lattice-based post-quantum cryptography and Zero-Knowledge Proofs (ZKP).
 The cryptographic core is based on the *Signature with Efficient Protocols (SEP)* scheme proposed in the paper:
-> **"Practical Post-Quantum Signatures for Privacy"** (Argo et al., CCS '24).
+>**"Practical Post-Quantum Signatures for Privacy"** (Argo et al., CCS '24).
 
-This repository bridges the gap between low-level academic cryptography and practical software engineering by wrapping complex Module Learning With Errors (M-LWE) lattice operations into a modern, containerized Web API ecosystem.
+Research Paper: [Practical Post-Quantum Signatures for Privacy](https://eprint.iacr.org/2024/131.pdf)
+Original Authors: Sven Argo, Tim Güneysu, Corentin Jeudy, Georg Land, Adeline Roux-Langlois, Olivier Sanders
+Original Implementation: [GitHub Repository of the authors](https://github.com/Chair-for-Security-Engineering/lattice-anonymous-credentials)
 
----
+
+### Original Authors’ Contribution
+The original implementation provides:
+  Low-level lattice cryptography implementation
+  Zero-Knowledge Proof schemes
+  Cryptographic primitives
+  Mathematical lattice operations
+  Benchmarking utilities
 
 ## Quick Start (Build & Run)
 
