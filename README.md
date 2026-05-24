@@ -8,7 +8,6 @@
 ## About the Project
 This application serves as a demonstrator of an attribute-based authentication (ABA) ecosystem utilizing lattice-based post-quantum cryptography and Zero-Knowledge Proofs (ZKP).
 The cryptographic core is based on the *Signature with Efficient Protocols (SEP)* scheme proposed in the paper:
->**"Practical Post-Quantum Signatures for Privacy"** (Argo et al., CCS '24).
 
 Research Paper: [Practical Post-Quantum Signatures for Privacy](https://eprint.iacr.org/2024/131.pdf)
 Original Authors: Sven Argo, Tim Güneysu, Corentin Jeudy, Georg Land, Adeline Roux-Langlois, Olivier Sanders
