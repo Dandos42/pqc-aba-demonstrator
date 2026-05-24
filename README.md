@@ -15,20 +15,10 @@ This repository bridges the gap between low-level academic cryptography and prac
 
 ---
 
-## 🚀 Quick Start (Build & Run)
+## Quick Start (Build & Run)
 
-### Prerequisites
-# Sestavení Docker obrazu
+### Sestavení Docker obrazu
 docker build -t lac_api .
 
-# Spuštění kontejneru
+### Spuštění kontejneru
 docker run -d -p 8000:8000 --name lac_demo lac_api
-### Installation Steps
-
-**1. Clone the repository and initialize submodules**
-This project relies on external C libraries (like FLINT). You must clone the repository with its submodules:
-```bash
-git clone [https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git)
-cd YOUR_REPO_NAME
-git submodule update --init --recursive
-
