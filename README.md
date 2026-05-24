@@ -35,6 +35,12 @@ The original implementation provides:
 *   Designing a demonstrator workflow simulating Issuer, Holder, and Verifier interactions within an SSI ecosystem
 *   Implementing telemetry visualization and user interaction interfaces for cryptographic demonstrations
 
+### Documentation & Benchmarks
+Additional resources can be found in the `docs` directory:
+* **Master's Thesis (`docs/TextPrace.pdf`):** Comprehensive documentation of the project, including theoretical background, architecture, and implementation details.
+* **Benchmarks (`docs/benchmark.xlsx`):** Detailed performance measurements and metrics of the implemented cryptographic operations.
+---
+
 ## Quick Start (Build & Run)
 **Requirements:** 
 *   Docker
@@ -57,20 +63,27 @@ After successfully building and running the Docker container:
 3. Detailed usage instructions are available directly in the application under the **User Manual** tab.
 ---
 
-# Contributing
+## Contributing
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
 1. Fork the Project
 2. Create your Feature Branch
-3. git checkout -b feature/AmazingFeature
-4. git commit -m "Add some AmazingFeature"
-5. git push origin feature/AmazingFeature
-6. Open a Pull Request
-
+```bash
+git checkout -b feature/Name
+```
+3. Commit your changes
+```bash
+git commit -m "Add some"
+```
+4. Push to GitHub
+```bash
+git push origin feature/Name
+```
+5. Open a Pull Request
 
 ## Licence
 Distributed under the GNU General Public License v3.0 (GPL-3.0). See the `LICENSE` file for more information.
 
 ## Contact
-Your Name: Bc. Daniel Prachař
-Email: 240969@vutbr.cz
-Project Link: [Project Link](https://github.com/Dandos42/pqc-aba-demonstrator)
+* Your Name: Bc. Daniel Prachař
+* Email: 240969@vutbr.cz
+* Project Link: [Project Link](https://github.com/Dandos42/pqc-aba-demonstrator)
