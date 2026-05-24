@@ -18,9 +18,11 @@ This repository bridges the gap between low-level academic cryptography and prac
 ## 🚀 Quick Start (Build & Run)
 
 ### Prerequisites
-* [Git](https://git-scm.com/) installed on your machine.
-* [Docker](https://www.docker.com/) installed and running.
+# Sestavení Docker obrazu
+docker build -t lac_api .
 
+# Spuštění kontejneru
+docker run -d -p 8000:8000 --name lac_demo lac_api
 ### Installation Steps
 
 **1. Clone the repository and initialize submodules**
