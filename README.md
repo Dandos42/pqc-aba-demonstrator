@@ -41,16 +41,30 @@ The original implementation provides:
 *   Modern web browser
 
 ### Build Docker Image
+```bash
 docker build -t lac_api .
-
+```
 ### Run Docker Container
+```bash
 docker run -d -p 8000:8000 --name lac_demo lac_api
+```
 
 ### Using the Demonstrator
 After successfully building and running the Docker container:
-Open the index.html file in your web browser.
-The demonstrator will automatically communicate with the backend API.
-Detailed usage instructions are available directly in the application under the User Manual tab.
+
+1. Open the `index.html` file in your web browser.
+2. The demonstrator will automatically communicate with the backend API.
+3. Detailed usage instructions are available directly in the application under the **User Manual** tab.
+---
+
+# Contributing
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
+1. Fork the Project
+2. Create your Feature Branch
+3. git checkout -b feature/AmazingFeature
+4. git commit -m "Add some AmazingFeature"
+5. git push origin feature/AmazingFeature
+6. Open a Pull Request
 
 
 ## Licence
